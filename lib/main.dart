@@ -1,18 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:aplicativo_nex/pages/crisis_mode_page.dart'; // Importação da tela do Modo Crise
 import 'package:aplicativo_nex/pages/tasks/task_page.dart'; // Importação da tela de tarefas
+import 'package:aplicativo_nex/pages/login_page.dart'; // Importação da tela de login
+import 'package:aplicativo_nex/pages/register_page.dart'; // Importação da tela de registro
 import 'package:hive_flutter/hive_flutter.dart';
 import 'models/task.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   Hive.registerAdapter(TaskAdapter());
-  await Hive.openBox<Task>('tasks'); // ESSENCIAL
-  runApp(MyApp());
+  await Hive.openBox<Task>('tasks');
+  await Hive.openBox('auth'); // nova box para autenticação
+
+  final isLoggedIn = Hive.box('auth').get('isLoggedIn', defaultValue: false);
+
+  runApp(MyApp(isLoggedIn: isLoggedIn));
 }
 
 class MyApp extends StatelessWidget {
+  final bool isLoggedIn;
+
+  const MyApp({super.key, required this.isLoggedIn});
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -21,8 +31,10 @@ class MyApp extends StatelessWidget {
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
       themeMode: ThemeMode.system,
-      initialRoute: '/',
+      initialRoute: isLoggedIn ? '/' : '/login',
       routes: {
+        '/login': (context) => LoginPage(),
+        '/register': (context) => RegisterPage(),
         '/': (context) => HomeScreen(),
         '/tasks': (context) => TasksPage(),
         '/community': (context) => SimpleScreen(title: 'Comunidade'),
