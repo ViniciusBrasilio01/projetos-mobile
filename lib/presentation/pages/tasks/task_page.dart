@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:lottie/lottie.dart';
 
-import '../../models/task.dart';
+import '../../../models/task.dart';
 import 'add_task_page.dart';
 import 'edit_task_page.dart';
 import 'task_detail_page.dart';

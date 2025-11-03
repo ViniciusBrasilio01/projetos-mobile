@@ -1,7 +1,7 @@
-import 'package:aplicativo_nex/pages/tasks/edit_task_page.dart';
+import 'package:aplicativo_nex/presentation/pages/tasks/edit_task_page.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../models/task.dart';
+import '../../../models/task.dart';
 
 class TaskDetailPage extends StatelessWidget {
   final Task task;

@@ -1,43 +1,46 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:hive/hive.dart';
-import 'package:uuid/uuid.dart';
-import '../../models/task.dart';
+import '../../../models/task.dart';
 
-class AddTaskPage extends StatefulWidget {
-  const AddTaskPage({super.key});
+class EditTaskPage extends StatefulWidget {
+  final Task task;
+
+  const EditTaskPage({super.key, required this.task});
 
   @override
-  State<AddTaskPage> createState() => _AddTaskPageState();
+  State<EditTaskPage> createState() => _EditTaskPageState();
 }
 
-class _AddTaskPageState extends State<AddTaskPage> {
+class _EditTaskPageState extends State<EditTaskPage> {
   final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _descriptionController = TextEditingController();
+  late TextEditingController _titleController;
+  late TextEditingController _descriptionController;
   DateTime? _dueDate;
 
-  void _saveTask() async {
-    if (_formKey.currentState!.validate()) {
-      final taskBox = Hive.box<Task>('tasks');
-      final newTask = Task(
-        id: const Uuid().v4(),
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        isCompleted: false,
-        createdAt: DateTime.now(),
-        dueDate: _dueDate,
-      );
+  @override
+  void initState() {
+    super.initState();
+    _titleController = TextEditingController(text: widget.task.title);
+    _descriptionController =
+        TextEditingController(text: widget.task.description ?? '');
+    _dueDate = widget.task.dueDate;
+  }
 
-      await taskBox.add(newTask);
-      Navigator.pop(context); // Volta para a Home
+  void _updateTask() async {
+    if (_formKey.currentState!.validate()) {
+      widget.task.title = _titleController.text.trim();
+      widget.task.description = _descriptionController.text.trim();
+      widget.task.dueDate = _dueDate;
+
+      await widget.task.save();
+      Navigator.pop(context);
     }
   }
 
   Future<void> _pickDueDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
+      initialDate: _dueDate ?? DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
@@ -53,7 +56,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Nova Tarefa', style: GoogleFonts.poppins()),
+        title: Text('Editar Tarefa', style: GoogleFonts.poppins()),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -87,8 +90,8 @@ class _AddTaskPageState extends State<AddTaskPage> {
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 icon: const Icon(Icons.save),
-                label: const Text('Salvar Tarefa'),
-                onPressed: _saveTask,
+                label: const Text('Salvar Alterações'),
+                onPressed: _updateTask,
               ),
             ],
           ),

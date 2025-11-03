@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:aplicativo_nex/pages/crisis_mode_page.dart'; // Importação da tela do Modo Crise
-import 'package:aplicativo_nex/pages/tasks/task_page.dart'; // Importação da tela de tarefas
-import 'package:aplicativo_nex/pages/login_page.dart'; // Importação da tela de login
-import 'package:aplicativo_nex/pages/register_page.dart'; // Importação da tela de registro
+import 'package:aplicativo_nex/presentation/pages/crisis/crisis_mode_page.dart'; // Importação da tela do Modo Crise
+import 'package:aplicativo_nex/presentation/pages/tasks/task_page.dart'; // Importação da tela de tarefas
+import 'package:aplicativo_nex/presentation/pages/login/login_page.dart'; // Importação da tela de login
+import 'package:aplicativo_nex/presentation/pages/register/register_page.dart'; // Importação da tela de registro
 import 'package:hive_flutter/hive_flutter.dart';
 import 'models/task.dart';
 
