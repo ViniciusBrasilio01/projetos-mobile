@@ -1,57 +1,83 @@
 import 'package:flutter/material.dart';
-import 'package:aplicativo_nex/presentation/pages/crisis/crisis_mode_page.dart'; // Importação da tela do Modo Crise
-import 'package:aplicativo_nex/presentation/pages/tasks/task_page.dart'; // Importação da tela de tarefas
-import 'package:aplicativo_nex/presentation/pages/login/login_page.dart'; // Importação da tela de login
-import 'package:aplicativo_nex/presentation/pages/register/register_page.dart'; // Importação da tela de registro
 import 'package:hive_flutter/hive_flutter.dart';
-import 'models/task.dart';
 
+// Importações das páginas principais
+import 'package:aplicativo_nex/presentation/pages/crisis/crisis_mode_page.dart';
+import 'package:aplicativo_nex/presentation/pages/tasks/task_page.dart';
+import 'package:aplicativo_nex/presentation/pages/login/login_page.dart';
+import 'package:aplicativo_nex/presentation/pages/register/register_page.dart';
+
+// Importações dos modelos Hive
+import 'models/task.dart';
+import 'models/user.dart';
 
 void main() async {
+  // Inicializa o Flutter antes de qualquer operação assíncrona
   WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
-  Hive.registerAdapter(TaskAdapter());
-  await Hive.openBox<Task>('tasks');
-  await Hive.openBox('auth'); // nova box para autenticação
 
+  // Inicializa o Hive com suporte ao Flutter
+  await Hive.initFlutter();
+
+  // Registra os adapters dos modelos Hive
+  Hive.registerAdapter(TaskAdapter());
+  Hive.registerAdapter(UserProfileTypeAdapter());
+  Hive.registerAdapter(UserAdapter());
+
+  // Abre as caixas Hive utilizadas no app
+  await Hive.openBox<Task>('tasks'); // Caixa de tarefas
+  await Hive.openBox('auth');        // Caixa de autenticação
+  await Hive.openBox<User>('users'); // Caixa de usuários
+
+  // Verifica se o usuário está logado
   final isLoggedIn = Hive.box('auth').get('isLoggedIn', defaultValue: false);
 
+  // Executa o aplicativo principal
   runApp(MyApp(isLoggedIn: isLoggedIn));
 }
 
+/// Widget principal do aplicativo
 class MyApp extends StatelessWidget {
   final bool isLoggedIn;
 
   const MyApp({super.key, required this.isLoggedIn});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'NEX App',
       debugShowCheckedModeBanner: false,
+
+      // Define temas claro e escuro
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
       themeMode: ThemeMode.system,
+
+      // Define a rota inicial com base no estado de login
       initialRoute: isLoggedIn ? '/' : '/login',
+
+      // Define todas as rotas nomeadas do aplicativo
       routes: {
-        '/login': (context) => LoginPage(),
-        '/register': (context) => RegisterPage(),
+        '/login': (context) => const LoginPage(),
+        '/register': (context) => const RegisterPage(),
         '/': (context) => HomeScreen(),
-        '/tasks': (context) => TasksPage(),
-        '/community': (context) => SimpleScreen(title: 'Comunidade'),
-        '/evolution': (context) => SimpleScreen(title: 'Evolução'),
-        '/education': (context) => SimpleScreen(title: 'Educação'),
-        '/support': (context) => SimpleScreen(title: 'Suporte'),
-        '/crisis': (context) => CrisisModePage(),
-        '/profile': (context) => SimpleScreen(title: 'Perfil'),
-        '/settings': (context) => SimpleScreen(title: 'Configurações'),
+        '/tasks': (context) => const TasksPage(),
+        '/community': (context) => const SimpleScreen(title: 'Comunidade'),
+        '/evolution': (context) => const SimpleScreen(title: 'Evolução'),
+        '/education': (context) => const SimpleScreen(title: 'Educação'),
+        '/support': (context) => const SimpleScreen(title: 'Suporte'),
+        '/crisis': (context) => const CrisisModePage(),
+        '/profile': (context) => const SimpleScreen(title: 'Perfil'),
+        '/settings': (context) => const SimpleScreen(title: 'Configurações'),
       },
     );
   }
 }
 
+/// Tela principal exibida após login
 class HomeScreen extends StatelessWidget {
   final double logoSize = 180;
 
+  // Lista de itens do menu principal
   final List<MenuItem> menuItems = [
     MenuItem(icon: Icons.playlist_add_check, label: 'TAREFAS', route: '/tasks'),
     MenuItem(icon: Icons.forum, label: 'COMUNIDADE', route: '/community'),
@@ -60,6 +86,8 @@ class HomeScreen extends StatelessWidget {
     MenuItem(icon: Icons.headset_mic, label: 'SUPORTE', route: '/support'),
     MenuItem(icon: Icons.warning, label: 'MODO CRISE', route: '/crisis'),
   ];
+
+  HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -73,18 +101,23 @@ class HomeScreen extends StatelessWidget {
             Column(
               children: [
                 const SizedBox(height: 20),
+
+                // Logo do aplicativo
                 Image.asset(
                   'assets/images/logo_nex.png',
                   width: logoSize,
                   height: logoSize,
                   semanticLabel: 'Logo do aplicativo NEX',
                 ),
+
                 const SizedBox(height: 20),
+
+                // Grade de botões do menu
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
                     child: GridView.builder(
-                      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                         maxCrossAxisExtent: 200,
                         mainAxisSpacing: 20,
                         crossAxisSpacing: 20,
@@ -136,6 +169,8 @@ class HomeScreen extends StatelessWidget {
                 ),
               ],
             ),
+
+            // Botão de acesso ao perfil
             Positioned(
               top: 10,
               left: 10,
@@ -147,6 +182,8 @@ class HomeScreen extends StatelessWidget {
                 },
               ),
             ),
+
+            // Botão de acesso às configurações
             Positioned(
               top: 10,
               right: 10,
@@ -165,6 +202,7 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+/// Classe que representa um item do menu principal
 class MenuItem {
   final IconData icon;
   final String label;
@@ -173,10 +211,11 @@ class MenuItem {
   MenuItem({required this.icon, required this.label, required this.route});
 }
 
+/// Tela genérica para páginas simples
 class SimpleScreen extends StatelessWidget {
   final String title;
 
-  const SimpleScreen({required this.title});
+  const SimpleScreen({super.key, required this.title});
 
   @override
   Widget build(BuildContext context) {
