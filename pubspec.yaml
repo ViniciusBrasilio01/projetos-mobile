@@ -53,6 +53,7 @@ dependencies:
   flutter_tts: ^4.2.3
   uuid: ^4.2.1
   path_provider: ^2.0.14
+  collection: ^1.17.0
 
   # Timer e cronômetro
   percent_indicator: ^4.2.3

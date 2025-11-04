@@ -1,61 +1,66 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
-// Importações das páginas principais
+// Importações das páginas
+
 import 'package:aplicativo_nex/presentation/pages/crisis/crisis_mode_page.dart';
 import 'package:aplicativo_nex/presentation/pages/tasks/task_page.dart';
 import 'package:aplicativo_nex/presentation/pages/login/login_page.dart';
 import 'package:aplicativo_nex/presentation/pages/register/register_page.dart';
 
-// Importações dos modelos Hive
+
+// Modelos Hive
 import 'models/task.dart';
 import 'models/user.dart';
 
 void main() async {
-  // Inicializa o Flutter antes de qualquer operação assíncrona
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Inicializa o Hive com suporte ao Flutter
   await Hive.initFlutter();
 
-  // Registra os adapters dos modelos Hive
+  // Registro dos adapters Hive
   Hive.registerAdapter(TaskAdapter());
   Hive.registerAdapter(UserProfileTypeAdapter());
   Hive.registerAdapter(UserAdapter());
 
-  // Abre as caixas Hive utilizadas no app
-  await Hive.openBox<Task>('tasks'); // Caixa de tarefas
-  await Hive.openBox('auth');        // Caixa de autenticação
-  await Hive.openBox<User>('users'); // Caixa de usuários
+  // Abertura das boxes
+  await Hive.openBox<Task>('tasks');
+  await Hive.openBox('auth');
+  await Hive.openBox<User>('users');
 
   // Verifica se o usuário está logado
-  final isLoggedIn = Hive.box('auth').get('isLoggedIn', defaultValue: false);
+  final authBox = Hive.box('auth');
+  final isLoggedIn = authBox.get('isLoggedIn', defaultValue: false);
+
+  // Recupera o tipo de perfil armazenado (se houver)
+  final int? profileIndex = authBox.get('profileType');
+  final UserProfileType? profileType = profileIndex != null
+      ? UserProfileType.values[profileIndex]
+      : null;
 
   // Executa o aplicativo principal
-  runApp(MyApp(isLoggedIn: isLoggedIn));
+  runApp(MyApp(isLoggedIn: isLoggedIn, profileType: profileType));
 }
 
 /// Widget principal do aplicativo
 class MyApp extends StatelessWidget {
   final bool isLoggedIn;
+  final UserProfileType? profileType;
 
-  const MyApp({super.key, required this.isLoggedIn});
+  const MyApp({super.key, required this.isLoggedIn, required this.profileType});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'NEX App',
       debugShowCheckedModeBanner: false,
-
-      // Define temas claro e escuro
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
       themeMode: ThemeMode.system,
 
-      // Define a rota inicial com base no estado de login
-      initialRoute: isLoggedIn ? '/' : '/login',
+      // Define a rota inicial com base no login e perfil
+      initialRoute: _getInitialRoute(),
 
-      // Define todas as rotas nomeadas do aplicativo
+      // Rotas nomeadas do aplicativo
       routes: {
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
@@ -71,13 +76,28 @@ class MyApp extends StatelessWidget {
       },
     );
   }
+
+  /// Define a rota inicial com base no tipo de perfil
+  String _getInitialRoute() {
+    if (!isLoggedIn) return '/login';
+
+    switch (profileType) {
+      case UserProfileType.neurodivergente:
+        return '/'; // Home padrão
+      case UserProfileType.responsavel:
+        return '/tasks'; // Exemplo: redireciona para tarefas
+      case UserProfileType.profissional:
+        return '/community'; // Exemplo: redireciona para comunidade
+      default:
+        return '/';
+    }
+  }
 }
 
 /// Tela principal exibida após login
 class HomeScreen extends StatelessWidget {
   final double logoSize = 180;
 
-  // Lista de itens do menu principal
   final List<MenuItem> menuItems = [
     MenuItem(icon: Icons.playlist_add_check, label: 'TAREFAS', route: '/tasks'),
     MenuItem(icon: Icons.forum, label: 'COMUNIDADE', route: '/community'),
@@ -101,18 +121,13 @@ class HomeScreen extends StatelessWidget {
             Column(
               children: [
                 const SizedBox(height: 20),
-
-                // Logo do aplicativo
                 Image.asset(
                   'assets/images/logo_nex.png',
                   width: logoSize,
                   height: logoSize,
                   semanticLabel: 'Logo do aplicativo NEX',
                 ),
-
                 const SizedBox(height: 20),
-
-                // Grade de botões do menu
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
@@ -169,8 +184,6 @@ class HomeScreen extends StatelessWidget {
                 ),
               ],
             ),
-
-            // Botão de acesso ao perfil
             Positioned(
               top: 10,
               left: 10,
@@ -182,8 +195,6 @@ class HomeScreen extends StatelessWidget {
                 },
               ),
             ),
-
-            // Botão de acesso às configurações
             Positioned(
               top: 10,
               right: 10,
