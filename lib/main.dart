@@ -7,6 +7,7 @@ import 'package:aplicativo_nex/presentation/pages/crisis/crisis_mode_page.dart';
 import 'package:aplicativo_nex/presentation/pages/tasks/task_page.dart';
 import 'package:aplicativo_nex/presentation/pages/login/login_page.dart';
 import 'package:aplicativo_nex/presentation/pages/register/register_page.dart';
+import 'package:aplicativo_nex/presentation/pages/profile/profile_page.dart';
 
 
 // Modelos Hive
@@ -71,7 +72,7 @@ class MyApp extends StatelessWidget {
         '/education': (context) => const SimpleScreen(title: 'Educação'),
         '/support': (context) => const SimpleScreen(title: 'Suporte'),
         '/crisis': (context) => const CrisisModePage(),
-        '/profile': (context) => const SimpleScreen(title: 'Perfil'),
+        '/profile': (context) => const ProfilePage(),
         '/settings': (context) => const SimpleScreen(title: 'Configurações'),
       },
     );
