@@ -20,19 +20,22 @@ class UserAdapter extends TypeAdapter<User> {
       username: fields[0] as String,
       password: fields[1] as String,
       profileType: fields[2] as UserProfileType,
+      profileImagePath: fields[3] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, User obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.username)
       ..writeByte(1)
       ..write(obj.password)
       ..writeByte(2)
-      ..write(obj.profileType);
+      ..write(obj.profileType)
+      ..writeByte(3)
+      ..write(obj.profileImagePath);
   }
 
   @override

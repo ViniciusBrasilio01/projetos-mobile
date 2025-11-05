@@ -1,12 +1,23 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../models/user.dart';
 
-/// Tela de perfil do usuário logado
-class ProfilePage extends StatelessWidget {
+/// Tela de perfil com edição de nome e imagem
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
-  /// Função que retorna o nome legível do tipo de perfil
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  String? _imagePath;
+
+  /// Retorna o nome legível do tipo de perfil
   String _getProfileLabel(UserProfileType type) {
     switch (type) {
       case UserProfileType.neurodivergente:
@@ -15,17 +26,41 @@ class ProfilePage extends StatelessWidget {
         return 'Pai/Responsável';
       case UserProfileType.profissional:
         return 'Profissional (Médico ou Professor)';
-      }
+    }
   }
 
-  /// Função que realiza o logout do usuário
-  void _logout(BuildContext context) {
+  /// Realiza logout e limpa dados da box 'auth'
+  void _logout() {
     final authBox = Hive.box('auth');
     authBox.put('isLoggedIn', false);
     authBox.delete('profileType');
 
-    // Retorna à tela de login
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+  }
+
+  /// Atualiza os dados do usuário no Hive
+  void _saveChanges(User user) {
+    if (_formKey.currentState!.validate()) {
+      user.username = _usernameController.text.trim();
+      user.profileImagePath = _imagePath;
+      user.save();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Perfil atualizado com sucesso')),
+      );
+    }
+  }
+
+  /// Abre o seletor de imagem e salva o caminho
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(source: ImageSource.gallery);
+
+    if (picked != null) {
+      setState(() {
+        _imagePath = picked.path;
+      });
+    }
   }
 
   @override
@@ -33,77 +68,101 @@ class ProfilePage extends StatelessWidget {
     final authBox = Hive.box('auth');
     final usersBox = Hive.box<User>('users');
 
-    // Recupera o tipo de perfil armazenado
     final int? profileIndex = authBox.get('profileType');
     final UserProfileType? profileType = profileIndex != null
         ? UserProfileType.values[profileIndex]
         : null;
 
-    // Recupera o usuário logado com base no tipo de perfil
     final User? currentUser = usersBox.values.firstWhere(
       (user) => user.profileType == profileType,
-      
     );
+
+    if (currentUser == null) {
+      return const Scaffold(
+        body: Center(child: Text('Usuário não encontrado')),
+      );
+    }
+
+    // Preenche os campos com dados atuais
+    _usernameController.text = currentUser.username;
+    _imagePath ??= currentUser.profileImagePath;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Perfil'),
-        automaticallyImplyLeading: false, // Remove botão de voltar
+        automaticallyImplyLeading: false,
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
-        child: currentUser == null
-            ? const Center(child: Text('Usuário não encontrado'))
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 20),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              const SizedBox(height: 20),
 
-                  // Ícone de perfil
-                  const Center(
-                    child: Icon(Icons.account_circle, size: 100, color: Colors.blueAccent),
+              // Imagem de perfil
+              Center(
+                child: GestureDetector(
+                  onTap: _pickImage,
+                  child: CircleAvatar(
+                    radius: 60,
+                    backgroundImage: _imagePath != null
+                        ? FileImage(File(_imagePath!))
+                        : const AssetImage('assets/images/default_avatar.png')
+                            as ImageProvider,
+                    child: _imagePath == null
+                        ? const Icon(Icons.camera_alt, size: 30, color: Colors.white)
+                        : null,
                   ),
-
-                  const SizedBox(height: 20),
-
-                  // Nome de usuário
-                  Text(
-                    'Usuário:',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  Text(
-                    currentUser.username,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Tipo de perfil
-                  Text(
-                    'Tipo de Perfil:',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  Text(
-                    _getProfileLabel(currentUser.profileType),
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-
-                  const Spacer(),
-
-                  // Botão de logout
-                  Center(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.logout),
-                      label: const Text('Sair'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
-                        foregroundColor: Colors.white,
-                      ),
-                      onPressed: () => _logout(context),
-                    ),
-                  ),
-                ],
+                ),
               ),
+
+              const SizedBox(height: 20),
+
+              // Campo de edição do nome de usuário
+              TextFormField(
+                controller: _usernameController,
+                decoration: const InputDecoration(labelText: 'Nome de usuário'),
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'Informe o nome' : null,
+              ),
+
+              const SizedBox(height: 20),
+
+              // Tipo de perfil (somente leitura)
+              Text(
+                'Tipo de Perfil:',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              Text(
+                _getProfileLabel(currentUser.profileType),
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+
+              const SizedBox(height: 30),
+
+              // Botão para salvar alterações
+              ElevatedButton.icon(
+                icon: const Icon(Icons.save),
+                label: const Text('Salvar Alterações'),
+                onPressed: () => _saveChanges(currentUser),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Botão para logout
+              ElevatedButton.icon(
+                icon: const Icon(Icons.logout),
+                label: const Text('Sair'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.redAccent,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: _logout,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
