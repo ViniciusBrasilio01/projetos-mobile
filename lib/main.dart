@@ -66,7 +66,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
         '/': (context) => HomeScreen(),
-        '/tasks': (context) => const TasksPage(),
+        '/tasks': (context) => const TaskPage(),
         '/community': (context) => const SimpleScreen(title: 'Comunidade'),
         '/evolution': (context) => const SimpleScreen(title: 'Evolução'),
         '/education': (context) => const SimpleScreen(title: 'Educação'),

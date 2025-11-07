@@ -4,7 +4,7 @@ import 'package:hive/hive.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../models/user.dart';
 
-/// Tela de perfil com edição de nome e imagem
+/// Tela de perfil com edição de nome e imagem de usuário
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
@@ -35,6 +35,7 @@ class _ProfilePageState extends State<ProfilePage> {
     authBox.put('isLoggedIn', false);
     authBox.delete('profileType');
 
+    // Redireciona para a tela de login, removendo todas as rotas anteriores
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
@@ -73,15 +74,10 @@ class _ProfilePageState extends State<ProfilePage> {
         ? UserProfileType.values[profileIndex]
         : null;
 
-    final User? currentUser = usersBox.values.firstWhere(
+    final User currentUser = usersBox.values.firstWhere(
       (user) => user.profileType == profileType,
     );
 
-    if (currentUser == null) {
-      return const Scaffold(
-        body: Center(child: Text('Usuário não encontrado')),
-      );
-    }
 
     // Preenche os campos com dados atuais
     _usernameController.text = currentUser.username;
@@ -90,7 +86,16 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Perfil'),
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: false, // Remove botão de voltar padrão
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            tooltip: 'Voltar',
+            onPressed: () {
+              Navigator.pop(context); // Volta para a tela anterior
+            },
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),

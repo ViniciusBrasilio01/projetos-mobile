@@ -2,18 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:lottie/lottie.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 import '../../../models/task.dart';
 import 'add_task_page.dart';
 import 'edit_task_page.dart';
 import 'task_detail_page.dart';
 
-class TasksPage extends StatelessWidget {
-  const TasksPage({super.key});
+/// Tela principal de tarefas com calendário semanal
+class TaskPage extends StatefulWidget {
+  const TaskPage({super.key});
+
+  @override
+  State<TaskPage> createState() => _TaskPageState();
+}
+
+class _TaskPageState extends State<TaskPage> {
+  DateTime _focusedDay = DateTime.now(); // Dia atualmente em foco no calendário
+  DateTime? _selectedDay; // Dia selecionado pelo usuário
+
+  /// Filtra as tarefas com base na data selecionada
+  List<Task> _getTasksForDay(Box<Task> box, DateTime? day) {
+    if (day == null) return box.values.toList();
+
+    return box.values.where((task) {
+      if (task.dueDate == null) return false;
+      return task.dueDate!.year == day.year &&
+          task.dueDate!.month == day.month &&
+          task.dueDate!.day == day.day;
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
     final taskBox = Hive.box<Task>('tasks');
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -25,12 +48,12 @@ class TasksPage extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
-            // Cabeçalho
+            // Cabeçalho com título e botão de adicionar tarefa
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Tarefas de Hoje',
+                  'Tarefas da Semana',
                   style: GoogleFonts.poppins(
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
@@ -49,21 +72,66 @@ class TasksPage extends StatelessWidget {
                 ),
               ],
             ),
+
             const SizedBox(height: 8),
-            // Lista de tarefas reais
+
+            // Calendário semanal interativo
+            TableCalendar(
+              firstDay: DateTime.now().subtract(const Duration(days: 365)),
+              lastDay: DateTime.now().add(const Duration(days: 365)),
+              focusedDay: _focusedDay,
+              selectedDayPredicate: (day) =>
+                  _selectedDay != null &&
+                  day.year == _selectedDay!.year &&
+                  day.month == _selectedDay!.month &&
+                  day.day == _selectedDay!.day,
+              calendarFormat: CalendarFormat.week,
+              startingDayOfWeek: StartingDayOfWeek.monday,
+              headerStyle: HeaderStyle(
+                formatButtonVisible: false,
+                titleCentered: true,
+                titleTextStyle: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              calendarStyle: CalendarStyle(
+                todayDecoration: BoxDecoration(
+                  color: Colors.blueAccent,
+                  shape: BoxShape.circle,
+                ),
+                selectedDecoration: BoxDecoration(
+                  color: Colors.indigo,
+                  shape: BoxShape.circle,
+                ),
+                selectedTextStyle: const TextStyle(color: Colors.white),
+              ),
+              onDaySelected: (selectedDay, focusedDay) {
+                setState(() {
+                  _selectedDay = selectedDay;
+                  _focusedDay = focusedDay;
+                });
+              },
+            ),
+
+            const SizedBox(height: 16),
+
+            // Lista de tarefas filtradas por dia
             Expanded(
               child: ValueListenableBuilder(
                 valueListenable: taskBox.listenable(),
                 builder: (context, Box<Task> box, _) {
-                  final tasks = box.values.toList();
+                  final tasks = _getTasksForDay(box, _selectedDay);
+
                   if (tasks.isEmpty) {
                     return Center(
                       child: Text(
-                        'Nenhuma tarefa adicionada ainda.',
+                        'Nenhuma tarefa para o dia selecionado.',
                         style: GoogleFonts.poppins(fontSize: 16),
                       ),
                     );
                   }
+
                   return ListView.builder(
                     itemCount: tasks.length,
                     itemBuilder: (context, index) {
@@ -74,8 +142,10 @@ class TasksPage extends StatelessWidget {
                 },
               ),
             ),
+
             const SizedBox(height: 16),
-            // Gamificação
+
+            // Área de gamificação com animação
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -107,16 +177,18 @@ class TasksPage extends StatelessWidget {
   }
 }
 
+/// Card que representa uma tarefa individual
 class TaskCard extends StatelessWidget {
   final Task task;
+
   const TaskCard({super.key, required this.task});
 
+  /// Exibe diálogo de confirmação para excluir tarefa
   void _confirmDelete(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Excluir Tarefa'),
-        content: const Text('Tem certeza que deseja excluir esta tarefa?'),
+        title: const Text('Tem certeza que deseja excluir esta tarefa?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
@@ -146,8 +218,7 @@ class TaskCard extends StatelessWidget {
         title: Text(
           task.title,
           style: GoogleFonts.poppins(
-            decoration:
-                task.isCompleted ? TextDecoration.lineThrough : null,
+            decoration: task.isCompleted ? TextDecoration.lineThrough : null,
           ),
         ),
         subtitle: task.description != null && task.description!.isNotEmpty
